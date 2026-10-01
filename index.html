@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZYNX App Store - 3D Thunder Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+            background-color: #020617;
+        }
+
+        body {
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 14px 60px;
+            position: relative;
+        }
+
+        /* Ambient Stage */
+        .sky-stage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+            background: #020617;
+        }
+
+        .storm-clouds {
+            position: absolute;
+            inset: -40px;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(15, 23, 42, 0.9) 0%, transparent 60%),
+                radial-gradient(circle at 80% 20%, rgba(15, 23, 42, 0.92) 0%, transparent 55%),
+                radial-gradient(circle at 50% 85%, rgba(2, 6, 23, 0.98) 0%, transparent 65%);
+            filter: blur(50px);
+            z-index: 1;
+        }
+
+        .rgb-nebula {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            transition: opacity 1.8s ease-in-out;
+            opacity: 0.85;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.85;
+            transition: all 2.5s ease-in-out;
+            animation: slowFloat 14s ease-in-out infinite alternate;
+        }
+
+        .orb-1 { width: 290px; height: 290px; top: -50px; left: -40px; }
+        .orb-2 { width: 270px; height: 270px; top: 35%; right: -60px; animation-duration: 17s; }
+        .orb-3 { width: 300px; height: 300px; bottom: -60px; left: -30px; animation-duration: 15s; }
+        .orb-4 { width: 250px; height: 250px; bottom: 20%; right: 0px; animation-duration: 18s; }
+
+        @keyframes slowFloat {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.18) translate(30px, 20px); }
+            100% { transform: scale(0.92) translate(-25px, 35px); }
+        }
+
+        #lightning-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* Sound Button */
+        .sound-toggle-btn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 100;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.65);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .sound-toggle-btn:active {
+            transform: scale(0.85);
+            background: rgba(56, 189, 248, 0.4);
+        }
+
+        .sound-hint {
+            position: fixed;
+            top: 17px;
+            right: 56px;
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #38bdf8;
+            pointer-events: none;
+            animation: bounceArrow 1.5s infinite;
+        }
+
+        @keyframes bounceArrow {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(4px); }
+        }
+
+        header {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 100%;
+            margin-top: 14px;
+            margin-bottom: 20px;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #f1f5f9;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #38bdf8;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.7; }
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto 18px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            padding: 12px 18px 12px 42px;
+            border-radius: 16px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.1);
+            transform: scale(1.01);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.95rem;
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+
+        .search-input:focus ~ .search-icon {
+            color: #38bdf8;
+        }
+
+        /* 2-Column Mobile Grid with 3D Perspective */
+        .grid-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            perspective: 1000px;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 22px;
+            padding: 16px 12px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 16px 35px -8px rgba(0, 0, 0, 0.6);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease;
+        }
+
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        .edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 4px 6px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        /* ==========================================================
+           Next-Level Logo Side-Lighting Wave (No Pop-up)
+        ========================================================== */
+        .icon-box {
+            width: 72px;
+            height: 72px;
+            border-radius: 19px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 6px 0 12px;
+            background: #0b1120;
+            position: relative;
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 24px -2px rgba(56, 189, 248, 0.35);
+        }
+
+        /* Halka Glowing Ray Logo ke Kono se pass hota hua */
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            inset: -100%;
+            background: linear-gradient(135deg, transparent 40%, rgba(56, 189, 248, 0.45) 50%, rgba(255, 255, 255, 0.65) 53%, transparent 60%);
+            animation: logoLightRay 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes logoLightRay {
+            0% { transform: translate(-80%, -80%) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            50% { transform: translate(50%, 50%) rotate(0deg); opacity: 1; }
+            65%, 100% { transform: translate(100%, 100%) rotate(0deg); opacity: 0; }
+        }
+
+        .icon-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+        }
+
+        .default-icon {
+            font-size: 34px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .meta {
+            font-size: 11px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 14px;
+        }
+
+        /* ==========================================================
+           3D Animate Download Button with Continuous Laser Lighting
+        ========================================================== */
+        .download-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #38bdf8;
+            text-decoration: none;
+            padding: 10px 0;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(56, 189, 248, 0.2);
+            animation: button3DFloat 3.5s ease-in-out infinite;
+        }
+
+        /* 3D Breathing Depth */
+        @keyframes button3DFloat {
+            0%, 100% {
+                transform: translateZ(0px) rotateX(0deg);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(56, 189, 248, 0.25);
+            }
+            50% {
+                transform: translateZ(12px) translateY(-2px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.5);
+                border-color: rgba(56, 189, 248, 0.6);
+            }
+        }
+
+        /* Continuous Diagonal Light Sweep across Download Button */
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 80%;
+            height: 100%;
+            background: linear-gradient(
+                90deg, 
+                transparent, 
+                rgba(56, 189, 248, 0.15), 
+                rgba(255, 255, 255, 0.6), 
+                rgba(56, 189, 248, 0.15), 
+                transparent
+            );
+            transform: skewX(-25deg);
+            animation: laserSweep 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes laserSweep {
+            0% { left: -150%; }
+            45%, 100% { left: 200%; }
+        }
+
+        .download-btn:active {
+            transform: scale(0.92) translateZ(0px) !important;
+            background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.9);
+        }
+
+        .download-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.2s ease;
+        }
+
+        .download-btn span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .download-btn:active svg {
+            transform: translateY(3px);
+        }
+
+        #loading {
+            font-size: 14px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-top: 30px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sound-toggle-btn" id="soundBtn" onclick="toggleAudio()">🔇</div>
+
+    <div class="sound-hint" id="soundHint">
+        Sound ➔
+    </div>
+
+    <div class="sky-stage">
+        <div class="storm-clouds"></div>
+        <div class="rgb-nebula" id="rgbNebula">
+            <div class="orb orb-1" id="orb1"></div>
+            <div class="orb orb-2" id="orb2"></div>
+            <div class="orb orb-3" id="orb3"></div>
+            <div class="orb orb-4" id="orb4"></div>
+        </div>
+        <canvas id="lightning-canvas"></canvas>
+    </div>
+
+    <header>
+        <div class="brand-badge">
+            <span class="pulse-dot"></span>
+            Official Repository
+        </div>
+        <h1>ZYNX App Store</h1>
+        <p>Verified Android apps for direct download</p>
+
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search apps (smart search)..." oninput="handleSearch(this.value)">
+            <span class="search-icon">⚡</span>
+        </div>
+    </header>
+
+    <div id="loading">Syncing secure apps...</div>
+    <div class="grid-container" id="apps-container"></div>
+
+    <script>
+        const ADMIN_PIN = "Danish Khan 123";
+        const MAX_APPS = 30;
+
+        const container = document.getElementById('apps-container');
+        const loading = document.getElementById('loading');
+
+        /* ==========================================================
+           1. Web Audio Engine (Rain, Ambient Drone, Typing & Zap FX)
+        ========================================================== */
+        let audioCtx = null;
+        let isMuted = true;
+        let rainNode = null;
+        let ambientOsc1 = null;
+        let ambientOsc2 = null;
+        let ambientGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playKeyClickSound() {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600 + Math.random() * 200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.015, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playZapSound() {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(240, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.16);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.18);
+        }
+
+        function startAmbientSoundtrack() {
+            if (!audioCtx) return;
+
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let lastOut = 0.0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                data[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = data[i];
+                data[i] *= 1.4;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            noise.loop = true;
+
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 850;
+
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.value = 0.05;
+
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(0);
+            rainNode = { source: noise, gain: noiseGain };
+
+            ambientOsc1 = audioCtx.createOscillator();
+            ambientOsc2 = audioCtx.createOscillator();
+            ambientGain = audioCtx.createGain();
+
+            ambientOsc1.type = 'sine';
+            ambientOsc1.frequency.setValueAtTime(65.41, audioCtx.currentTime);
+
+            ambientOsc2.type = 'triangle';
+            ambientOsc2.frequency.setValueAtTime(98.00, audioCtx.currentTime);
+
+            const droneFilter = audioCtx.createBiquadFilter();
+            droneFilter.type = 'lowpass';
+            droneFilter.frequency.setValueAtTime(200, audioCtx.currentTime);
+
+            ambientGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+
+            ambientOsc1.connect(droneFilter);
+            ambientOsc2.connect(droneFilter);
+            droneFilter.connect(ambientGain);
+            ambientGain.connect(audioCtx.destination);
+
+            ambientOsc1.start();
+            ambientOsc2.start();
+        }
+
+        function playThunderCrack() {
+            if (isMuted || !audioCtx) return;
+
+            const bufferSize = audioCtx.sampleRate * 2.2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(360, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 2.0);
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.1);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        function toggleAudio() {
+            initAudio();
+            isMuted = !isMuted;
+
+            const soundBtn = document.getElementById('soundBtn');
+            const hint = document.getElementById('soundHint');
+
+            if (hint) hint.style.display = 'none';
+
+            if (!isMuted) {
+                soundBtn.innerText = "🔊";
+                soundBtn.style.color = "#38bdf8";
+                soundBtn.style.borderColor = "rgba(56, 189, 248, 0.4)";
+                if (!rainNode) startAmbientSoundtrack();
+                if (rainNode) rainNode.gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                if (ambientGain) ambientGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            } else {
+                soundBtn.innerText = "🔇";
+                soundBtn.style.color = "rgba(255, 255, 255, 0.65)";
+                soundBtn.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                if (rainNode) rainNode.gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                if (ambientGain) ambientGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+            }
+        }
+
+        /* ==========================================================
+           2. Infinite Dynamic RGB Engine
+        ========================================================== */
+        function getRandomNeonColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsl(${hue}, 85%, 55%)`;
+        }
+
+        function applyRandomColors() {
+            for (let i = 1; i <= 4; i++) {
+                const c1 = getRandomNeonColor();
+                const c2 = getRandomNeonColor();
+                document.getElementById(`orb${i}`).style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+            }
+        }
+
+        applyRandomColors();
+
+        /* ==========================================================
+           3. Randomized Zigzag Lightning Engine
+        ========================================================== */
+        const canvas = document.getElementById('lightning-canvas');
+        const ctx = canvas.getContext('2d');
+        const rgbNebula = document.getElementById('rgbNebula');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createLightningPath(x1, y1, x2, y2, displacement, iteration) {
+            if (iteration <= 0) return [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+            const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * displacement;
+            const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * displacement;
+            const p1 = createLightningPath(x1, y1, midX, midY, displacement / 1.7, iteration - 1);
+            const p2 = createLightningPath(midX, midY, x2, y2, displacement / 1.7, iteration - 1);
+            return p1.concat(p2.slice(1));
+        }
+
+        function drawLightningBolt() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const startX = Math.random() * canvas.width;
+            const startY = 0;
+            const endX = Math.random() * canvas.width;
+            const endY = canvas.height * (0.8 + Math.random() * 0.2);
+
+            const points = createLightningPath(startX, startY, endX, endY, 140, 6);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            ctx.strokeStyle = "rgba(56, 189, 248, 0.95)";
+            ctx.lineWidth = 6;
+            ctx.shadowColor = "#38bdf8";
+            ctx.shadowBlur = 35;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "#ffffff";
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+
+            for (let i = 4; i < points.length - 8; i += 6) {
+                if (Math.random() > 0.3) {
+                    const bX = points[i].x + (Math.random() - 0.5) * 160;
+                    const bY = points[i].y + 50 + Math.random() * 80;
+                    const bPoints = createLightningPath(points[i].x, points[i].y, bX, bY, 45, 4);
+
+                    ctx.beginPath();
+                    ctx.moveTo(bPoints[0].x, bPoints[0].y);
+                    for (let j = 1; j < bPoints.length; j++) ctx.lineTo(bPoints[j].x, bPoints[j].y);
+                    ctx.strokeStyle = "rgba(186, 230, 253, 0.8)";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function triggerStrike() {
+            playThunderCrack();
+            drawLightningBolt();
+
+            setTimeout(() => { ctx.clearRect(0, 0, canvas.width, canvas.height); }, 60);
+            setTimeout(() => { drawLightningBolt(); }, 120);
+            setTimeout(() => { ctx.clearRect(0, 0, canvas.width, canvas.height); }, 220);
+        }
+
+        function runRandomStormCycle() {
+            const nextStrikeIn = 4000 + Math.random() * 10000;
+
+            setTimeout(() => {
+                rgbNebula.style.opacity = (Math.random() * 0.1).toFixed(2);
+
+                setTimeout(() => {
+                    triggerStrike();
+                    if (Math.random() > 0.5) {
+                        setTimeout(triggerStrike, 600 + Math.random() * 800);
+                    }
+                }, 1000);
+
+                setTimeout(() => {
+                    applyRandomColors();
+                    rgbNebula.style.opacity = (0.75 + Math.random() * 0.2).toFixed(2);
+                    runRandomStormCycle();
+                }, 2800);
+
+            }, nextStrikeIn);
+        }
+
+        runRandomStormCycle();
+
+        /* ==========================================================
+           4. Smart Fuzzy Search (Mistake & Space Tolerant)
+        ========================================================== */
+        function calculateSimilarity(str1, str2) {
+            str1 = str1.toLowerCase().replace(/\s+/g, '');
+            str2 = str2.toLowerCase().replace(/\s+/g, '');
+            if (str1.length === 0) return 1.0;
+            if (str2.includes(str1)) return 1.0;
+
+            let matches = 0;
+            let lastIdx = -1;
+            for (let i = 0; i < str1.length; i++) {
+                const char = str1[i];
+                const foundIdx = str2.indexOf(char, lastIdx + 1);
+                if (foundIdx > -1) {
+                    matches++;
+                    lastIdx = foundIdx;
+                }
+            }
+            return matches / Math.max(str1.length, str2.length);
+        }
+
+        function handleSearch(query) {
+            playKeyClickSound();
+            const cleanQuery = query.trim().toLowerCase();
+            const cards = Array.from(document.querySelectorAll('.card'));
+
+            if (!cleanQuery) {
+                cards.forEach(card => card.style.display = "flex");
+                return;
+            }
+
+            const scoredCards = cards.map(card => {
+                const title = card.querySelector('.title').innerText;
+                const score = calculateSimilarity(cleanQuery, title);
+                return { card, score };
+            });
+
+            scoredCards.sort((a, b) => b.score - a.score);
+
+            scoredCards.forEach(item => {
+                if (item.score > 0.25) {
+                    item.card.style.display = "flex";
+                    container.appendChild(item.card);
+                } else {
+                    item.card.style.display = "none";
+                }
+            });
+        }
+
+        /* ==========================================================
+           5. APK Handling, Real Size & Secure Rename
+        ========================================================== */
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return "Ready";
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        async function loadApkIcon(apkUrl, imgElement, fallbackElement) {
+            try {
+                const response = await fetch(apkUrl);
+                if (!response.ok) return;
+                const blob = await response.blob();
+                const zip = await JSZip.loadAsync(blob);
+
+                const iconPatterns = [
+                    /res\/mipmap-xxxhdpi.*\/ic_launcher.*\.(png|webp)/i,
+                    /res\/mipmap-xxhdpi.*\/ic_launcher.*\.(png|webp)/i,
+                    /res\/mipmap-xhdpi.*\/ic_launcher.*\.(png|webp)/i,
+                    /res\/mipmap-hdpi.*\/ic_launcher.*\.(png|webp)/i,
+                    /res\/drawable.*\/ic_launcher.*\.(png|webp)/i,
+                    /res\/.*\/app_icon.*\.(png|webp)/i,
+                    /res\/.*\/icon.*\.(png|webp)/i
+                ];
+
+                let targetFile = null;
+                for (let pattern of iconPatterns) {
+                    for (let path in zip.files) {
+                        if (pattern.test(path)) {
+                            targetFile = zip.files[path];
+                            break;
+                        }
+                    }
+                    if (targetFile) break;
+                }
+
+                if (targetFile) {
+                    const iconBlob = await targetFile.async("blob");
+                    imgElement.src = URL.createObjectURL(iconBlob);
+                    imgElement.style.display = "block";
+                    fallbackElement.style.display = "none";
+                }
+            } catch (e) {}
+        }
+
+        function changeName(index, titleTag) {
+            const pin = prompt("Admin Password daliye:");
+            if (pin === ADMIN_PIN) {
+                const newTitle = prompt("Naya App Name likhiye:", titleTag.innerText);
+                if (newTitle && newTitle.trim().length > 0) {
+                    titleTag.innerText = newTitle.trim();
+                    localStorage.setItem(`app_name_${index}`, newTitle.trim());
+                }
+            } else if (pin !== null) {
+                alert("Galat Password! Access Denied.");
+            }
+        }
+
+        function onDownloadClick(btn) {
+            playZapSound();
+            btn.innerHTML = `<span>✓ ⚡ Getting APK...</span>`;
+            setTimeout(() => {
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24"><path d="M12 16l4-5h-3V4h-2v7H8l4 5zm9 4v-4h-2v2H5v-2H3v4h18z"/></svg>
+                    <span>Get APK</span>
+                `;
+            }, 3000);
+        }
+
+        async function init() {
+            let found = 0;
+
+            for (let i = 1; i <= MAX_APPS; i++) {
+                const apkFile = `app${i}.apk`;
+
+                try {
+                    const res = await fetch(apkFile, { method: 'HEAD' });
+                    if (res.ok) {
+                        found++;
+                        const savedName = localStorage.getItem(`app_name_${i}`) || `App ${i}`;
+                        const sizeHeader = res.headers.get("content-length");
+                        const fileSizeText = sizeHeader ? formatBytes(sizeHeader) : "Ready";
+
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <button class="edit-btn" onclick="changeName(${i}, this.parentElement.querySelector('.title'))">⚙</button>
+                            <div class="icon-box">
+                                <span class="default-icon" id="def-${i}">⚡</span>
+                                <img id="icon-${i}" style="display: none;" alt="icon">
+                            </div>
+                            <div class="title">${savedName}</div>
+                            <div class="meta">${fileSizeText} • Direct APK</div>
+                            <a href="${apkFile}" class="download-btn" download onclick="onDownloadClick(this)">
+                                <svg viewBox="0 0 24 24"><path d="M12 16l4-5h-3V4h-2v7H8l4 5zm9 4v-4h-2v2H5v-2H3v4h18z"/></svg>
+                                <span>Get APK</span>
+                            </a>
+                        `;
+                        container.appendChild(card);
+
+                        loadApkIcon(apkFile, card.querySelector(`#icon-${i}`), card.querySelector(`#def-${i}`));
+                    }
+                } catch (e) {}
+            }
+
+            loading.style.display = 'none';
+
+            if (found === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; font-size: 14px; font-weight: 600;">Koi APK file nahi mili.</p>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
